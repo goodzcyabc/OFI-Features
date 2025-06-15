@@ -71,15 +71,3 @@ Uses Lasso regression to regress each symbol’s integrated OFI against others:
   }
 }
 ```
-
-## 📈 Sample Output
-
-```text
-✅ Multi-Level OFI computed.
-✅ Best-Level OFI:
-  symbol  timestamp                ofi_best
-  AAPL    2024-10-21T11:54:00Z     200
-  ...
-✅ Integrated OFI PCA Weights:
-  [0.02, 0.06, ..., 0.07]
-⚠️ Only one symbol — skipping cross-asset OFI
