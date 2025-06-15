@@ -1,44 +1,51 @@
 import pandas as pd
 
-def compute_multi_level_ofi_from_snapshots(df):
-    results = []
+def compute_multi_level_ofi_from_snapshots(df, max_levels=10):
+    df = df.sort_values(['symbol', 'timestamp']).reset_index(drop=True)
+    prev = {}
+    records = []
 
-    grouped = df.groupby(['symbol', 'timestamp'], sort=False)
-    prev_row = {}
+    for _, row in df.iterrows():
+        sym = row['symbol']
+        ts = row['timestamp']
+        prev_row = prev.get(sym)
+        ofi = {'symbol': sym, 'timestamp': ts}
 
-    for (symbol, timestamp), group in grouped:
-        row = group.iloc[0]
-        ofi_row = {'symbol': symbol, 'timestamp': timestamp}
+        for m in range(max_levels):
+            bp = f'bid_px_{m:02d}'
+            bs = f'bid_sz_{m:02d}'
+            ap = f'ask_px_{m:02d}'
+            az = f'ask_sz_{m:02d}'
 
-        for level in range(10):
-            bid_px_col = f'bid_px_{level:02d}'
-            ask_px_col = f'ask_px_{level:02d}'
-            bid_sz_col = f'bid_sz_{level:02d}'
-            ask_sz_col = f'ask_sz_{level:02d}'
+            if prev_row is None:
+                ofi[f'ofi_{m+1}'] = 0
+                continue
 
-            ofi = 0
+            bp_t, bp_p = row[bp], prev_row[bp]
+            bs_t, bs_p = row[bs], prev_row[bs]
 
-            # Check if previous row exists for comparison
-            if symbol in prev_row:
-                prev = prev_row[symbol]
+            ap_t, ap_p = row[ap], prev_row[ap]
+            az_t, az_p = row[az], prev_row[az]
 
-                # Bid side
-                if row[bid_px_col] > prev[bid_px_col]:
-                    ofi += row[bid_sz_col]
-                elif row[bid_px_col] < prev[bid_px_col]:
-                    ofi -= prev[bid_sz_col]
+            # Bid-side OFI
+            if bp_t > bp_p:
+                ob = bs_t
+            elif bp_t == bp_p:
+                ob = bs_t - bs_p
+            else:
+                ob = -bs_p
 
-                # Ask side
-                if row[ask_px_col] < prev[ask_px_col]:
-                    ofi += row[ask_sz_col]
-                elif row[ask_px_col] > prev[ask_px_col]:
-                    ofi -= prev[ask_sz_col]
+            # Ask-side OFI
+            if ap_t > ap_p:
+                oa = -az_p
+            elif ap_t == ap_p:
+                oa = az_t - az_p
+            else:
+                oa = az_t
 
-            # Store result
-            ofi_row[f'ofi_{level+1}'] = ofi
+            ofi[f'ofi_{m+1}'] = ob - oa
 
-        prev_row[symbol] = row
-        results.append(ofi_row)
+        prev[sym] = row
+        records.append(ofi)
 
-    ofi_df = pd.DataFrame(results)
-    return ofi_df
+    return pd.DataFrame(records)
