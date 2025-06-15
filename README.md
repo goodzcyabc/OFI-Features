@@ -83,9 +83,3 @@ Uses Lasso regression to regress each symbol’s integrated OFI against others:
 ✅ Integrated OFI PCA Weights:
   [0.02, 0.06, ..., 0.07]
 ⚠️ Only one symbol — skipping cross-asset OFI
-```
-
-## 📚 Reference
-
-> _"Cross-impact of order flow imbalance in equity markets"_  
-> https://arxiv.org/abs/1802.06149
